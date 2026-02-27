@@ -1,0 +1,126 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.app {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  background: #000011;
+}
+
+.title {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #00ff88;
+  font-size: 28px;
+  text-shadow: 0 0 20px rgba(0, 255, 136, 0.5);
+  z-index: 100;
+  pointer-events: none;
+  font-family: 'Microsoft YaHei', sans-serif;
+  letter-spacing: 8px;
+}
+
+.gesture-guide {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: rgba(0, 20, 40, 0.9);
+  border: 1px solid rgba(0, 255, 136, 0.3);
+  border-radius: 15px;
+  padding: 20px;
+  z-index: 1000;
+  box-shadow: 0 0 30px rgba(0, 255, 136, 0.2);
+  max-width: 250px;
+}
+
+.gesture-guide h3 {
+  color: #00ff88;
+  margin-bottom: 15px;
+  font-size: 16px;
+  text-align: center;
+}
+
+.gesture-guide ul {
+  list-style: none;
+}
+
+.gesture-guide li {
+  color: #aaa;
+  padding: 8px 0;
+  font-size: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.gesture-guide .gesture {
+  color: #fff;
+  font-weight: bold;
+}
+
+.close-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: none;
+  border: none;
+  color: #666;
+  cursor: pointer;
+  font-size: 18px;
+  padding: 5px;
+  line-height: 1;
+}
+
+.close-btn:hover {
+  color: #00ff88;
+}
+
+/* 加载动画 */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* 横屏提示动画 */
+@keyframes rotate-hint {
+  0%, 100% {
+    transform: rotate(0deg);
+  }
+  50% {
+    transform: rotate(90deg);
+  }
+}
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+  .title {
+    font-size: 20px;
+    letter-spacing: 4px;
+  }
+  
+  .gesture-guide {
+    bottom: auto;
+    top: 60px;
+    right: 10px;
+    left: 10px;
+    max-width: none;
+    padding: 15px;
+  }
+  
+  .gesture-guide li {
+    font-size: 12px;
+    padding: 6px 0;
+  }
+}
