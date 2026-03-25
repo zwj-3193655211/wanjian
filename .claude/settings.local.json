@@ -3,7 +3,11 @@
     "allow": [
       "Bash(npm run:*)",
       "Bash(npm install:*)",
-      "Bash(npx kill-port:*)"
+      "Bash(npx kill-port:*)",
+      "Bash(git clone:*)",
+      "Bash(D:\\\\ai_project\\\\wanjian\\\\venv\\\\Scripts\\\\python.exe:*)",
+      "Bash(./venv/Scripts/python.exe:*)",
+      "Bash(/d/ai_project/wanjian/venv/Scripts/python.exe:*)"
     ]
   }
 }

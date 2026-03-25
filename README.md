@@ -1,123 +1,116 @@
-# 万剑归宗 - 手势识别游戏
+# 青竹蜂云剑阵
 
-## 项目简介
-
-这是一个基于 **YOLO11** 手势识别的"万剑归宗"互动游戏。玩家通过手势控制屏幕上飞剑的发射和聚集，体验武侠小说中"万剑归宗"的震撼效果。
+基于 MediaPipe 手势识别的 3D 飞剑阵型控制应用。使用手指数量控制不同阵型，支持鼠标模式。
 
 ## 功能特点
 
-- 🎯 **实时手势识别** - 使用最新版 YOLO11 进行手部姿态检测
-- ⚔️ **万剑归宗效果** - 张开手掌召唤飞剑聚集，握拳释放
-- 💨 **粒子拖尾效果** - 飞剑带有华丽的拖尾和光芒
-- 🎮 **流畅游戏体验** - 60 FPS 流畅运行
+- **6种手指阵型** - 0-5根手指对应不同阵型
+- **鼠标模式** - 未检测到手时自动切换到鼠标控制
+- **实时手势识别** - 使用 MediaPipe Hands 高精度检测
+- **3D 渲染** - 基于 React Three Fiber 的炫酷视觉效果
+- **可调节参数** - Tab键打开设置菜单调节飞剑数量和速度
 
-## 技术栈
+## 阵型说明
 
-| 技术 | 版本 | 用途 |
-|------|------|------|
-| Python | 3.13.7 | 主开发语言 |
-| Ultralytics YOLO11 | 8.4.17 | 手势识别 |
-| OpenCV | 4.13.0 | 摄像头捕获 |
-| Pygame | 2.6.1 | 游戏渲染 |
-| NumPy | 2.4.2 | 数值计算 |
+| 手指数 | 阵型名称 | 效果描述 |
+|--------|---------|---------|
+| 0指 | 聚拢阵 🛡️ | 球形轨道围绕焦点旋转 |
+| 1指 | 游龙阵 🐉 | 飞剑沿路径游动拖尾 |
+| 2指 | 浑天阵 🌌 | 围绕焦点做圆周运动 |
+| 3指 | 凤凰阵 🔥 | 双圆环形成∞符号 |
+| 4指 | 莲花阵 🌸 | 斐波那契螺旋分布 |
+| 5指 | 大庚剑阵 ⚔️ | 主剑+分层旋转剑阵 |
 
-## 安装指南
-
-### 1. 创建虚拟环境
-
-```bash
-cd C:\Users\31936\iflow_project
-python -m venv venv
-venv\Scripts\activate
-```
-
-### 2. 安装依赖
+## 快速开始
 
 ```bash
-pip install -r requirements.txt
-```
+# 安装依赖
+npm install
 
-### 3. 运行游戏
+# 启动开发服务器
+npm run dev
 
-```bash
-python main.py
+# 构建生产版本
+npm run build
 ```
 
 ## 操作说明
 
-| 手势 | 动作 |
-|------|------|
-| 👋 张开手掌 | 启动"万剑归宗"模式 - 飞剑从四周聚集到手掌位置 |
-| ✊ 握拳 | 释放聚集的飞剑 - 飞剑向外爆发 |
-| 👋 快速挥手 | 快速发射一波飞剑 |
+### 手势模式
+- 举起手掌，让摄像头看到你的手
+- 用不同数量的手指控制阵型
+- 白点显示焦点位置（手心或鼠标）
 
-### 键盘快捷键
+### 鼠标模式
+- 当摄像头未检测到手时自动启用
+- 移动鼠标控制焦点位置
+- 点击屏幕切换阵型
 
-| 按键 | 功能 |
-|------|------|
-| ESC | 退出游戏 |
-| Space | 暂停/继续 |
-| C | 清除所有飞剑 |
-| R | 重置计数 |
+### 设置菜单
+- 按 `Tab` 键打开/关闭设置菜单
+- 调节飞剑数量、速度等参数
+- 点击"确认"应用设置
+
+## 技术栈
+
+- **React** - UI 框架
+- **Three.js** - 3D 渲染
+- **React Three Fiber** - React 三维渲染器
+- **MediaPipe Hands** - 手势识别
+- **Zustand** - 状态管理
+- **Vite** - 构建工具
 
 ## 项目结构
 
 ```
-iflow_project/
-├── PLAN.md              # 项目计划文档
-├── README.md            # 项目说明文档（本文件）
-├── requirements.txt     # Python依赖列表
-├── main.py              # 游戏主入口
-├── venv/                # Python虚拟环境
-└── src/
-    ├── __init__.py
-    ├── config.py        # 配置参数
-    ├── hand_detector.py # 手势识别模块
-    ├── sword.py         # 飞剑粒子效果
-    └── game.py          # 游戏核心逻辑
+src/
+├── components/
+│   ├── Scene.tsx          # 主场景
+│   ├── SwordSwarm.tsx     # 飞剑粒子系统
+│   ├── HandController.tsx # 手势控制
+│   ├── MouseController.tsx# 鼠标控制
+│   ├── FingerPointer.tsx  # 焦点白点
+│   ├── ShieldOrb.tsx      # 护盾核心
+│   ├── SettingsMenu.tsx   # 设置菜单
+│   └── OrientationGuard.tsx
+├── services/
+│   └── HandTrackingService.ts  # 手势识别服务
+├── store.ts               # 状态管理
+└── App.tsx                # 主应用
 ```
 
-## 配置参数
+## 浏览器要求
 
-可在 `src/config.py` 中修改以下参数：
+- Chrome 90+
+- Edge 90+
+- Safari 14+
+- Firefox 88+
 
-```python
-# 窗口设置
-WINDOW_WIDTH = 1280
-WINDOW_HEIGHT = 720
-FPS = 60
+需要支持：
+- WebGL
+- WebRTC (摄像头访问)
+- ES2020+
 
-# 飞剑设置
-SWORD_SPEED = 15          # 飞剑速度
-SWORD_COUNT_PER_WAVE = 20 # 每波飞剑数量
-SWORD_LENGTH = 40         # 飞剑长度
+## 开发
 
-# 手势阈值
-HAND_CONFIDENCE = 0.5     # 检测置信度阈值
+```bash
+# 开发模式（热重载）
+npm run dev
+
+# 类型检查
+npm run type-check
+
+# 构建
+npm run build
+
+# 预览构建结果
+npm run preview
 ```
-
-## 注意事项
-
-1. **摄像头要求** - 游戏需要摄像头，请确保摄像头已正确连接
-2. **光线环境** - 建议在光线充足的环境下使用，以提高手势识别准确率
-3. **模型下载** - 首次运行时，YOLO11 会自动下载模型文件（约 6MB）
-
-## 常见问题
-
-### Q: 摄像头无法打开？
-A: 检查摄像头是否被其他程序占用，或尝试修改 `config.py` 中的 `CAMERA_INDEX`。
-
-### Q: 手势识别不准确？
-A: 确保手部在摄像头画面中清晰可见，适当调整光线和距离。
-
-### Q: 游戏卡顿？
-A: 可尝试降低 `config.py` 中的 `SWORD_COUNT_PER_WAVE` 或 `FPS` 参数。
-
-## 开发者
-
-- **开发工具**: iFlow CLI
-- **开发日期**: 2026-02-26
 
 ## 许可证
 
-本项目仅供学习和娱乐使用。
+MIT
+
+## 作者
+
+Created with Claude Code
