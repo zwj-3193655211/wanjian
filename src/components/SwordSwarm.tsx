@@ -138,7 +138,7 @@ export function SwordSwarm() {
       const vel = velocities.current[i];
       const target = new THREE.Vector3();
 
-      if (gestureMode === 'GATHER' && isTracking) {
+      if (gestureMode === 'GATHER') {
         // 聚拢阵：球形轨道（复用SHIELD逻辑）
         const phi = Math.acos(1 - (2 * (i + 0.5)) / config.swordCount);
         const theta = Math.PI * (1 + Math.sqrt(5)) * i;
@@ -346,7 +346,7 @@ export function SwordSwarm() {
 
       // 朝向
       let lookTarget: THREE.Vector3;
-      if (gestureMode === 'GATHER' && isTracking) {
+      if (gestureMode === 'GATHER') {
         if (vel.length() > 0.1) {
           lookTarget = pos.clone().add(vel.clone().normalize());
         } else {
@@ -357,7 +357,7 @@ export function SwordSwarm() {
       } else if (gestureMode === 'LOTUS') {
         const outward = pos.clone().sub(currentTarget).normalize();
         lookTarget = pos.clone().add(outward);
-      } else if (gestureMode === 'DAGENG' && isTracking) {
+      } else if (gestureMode === 'DAGENG') {
         // 大庚剑阵：剑朝向下方
         lookTarget = pos.clone().add(new THREE.Vector3(0, -1, 0));
       } else {
@@ -369,7 +369,7 @@ export function SwordSwarm() {
 
       // 大庚模式下剑体变大
       let targetScale = 1;
-      if (gestureMode === 'DAGENG' && isTracking) {
+      if (gestureMode === 'DAGENG') {
         if (i === 0) targetScale = 6;  // 主剑放大6倍
         else targetScale = 1.5;        // 其他剑放大1.5倍
       }
