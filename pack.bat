@@ -20,5 +20,17 @@ echo === Package Windows ===
 call npx electron-builder --win --config.npmRebuild=false || exit /b 1
 echo.
 
+echo === Clean up unused files ===
+REM electron-builder 默认会生成 3 个不需要的文件：
+REM   - builder-debug.yml：诊断日志
+REM   - latest.yml：自动更新元数据（项目未配 electron-updater）
+REM   - *.blockmap：差分更新元数据（同上）
+REM 这些文件每次打包都会重新生成，必须每次手动清
+if exist "release\builder-debug.yml" del "release\builder-debug.yml"
+if exist "release\latest.yml" del "release\latest.yml"
+for %%f in ("release\*.blockmap") do del "%%f"
+echo 已清理无用的诊断/更新元数据文件
+echo.
+
 echo === Done ===
 dir release\
