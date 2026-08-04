@@ -111,6 +111,10 @@ npm run preview
 
 MIT
 
+## 技术路线
+
+详细架构、算法演进、trade-off 见 [TECH.md](./TECH.md)。
+
 ## 作者
 
 Created with Claude Code
