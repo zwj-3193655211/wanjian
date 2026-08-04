@@ -317,6 +317,7 @@ export function SwordSwarm() {
       if (target.distanceTo(pos) > 4) {
         if (isPhoenix) speed = config.sprintSpeed * 1.5;
         else if (isGather) speed = config.sprintSpeed * 1.2;  // 温和加速
+        else if (gestureMode === 'DRAGON') speed = config.sprintSpeed * 1.2;
         else speed = config.sprintSpeed;
       } else if (target.distanceTo(pos) < 1) {
         speed = target.distanceTo(pos) * config.maxSpeed * (isPhoenix ? 2 : 1);
@@ -336,12 +337,11 @@ export function SwordSwarm() {
       }
 
       const steer = desired.sub(vel);
-      // 双龙阵也使用高转向力，让飞剑更快跟随圆周轨迹
-      // 凤凰阵最高（×5），聚拢阵中等（×4），其余 ×1
+      // 凤凰/聚拢最高（×5），莲花/浑天中（×3），游龙温和（×2），其余 ×1
       const steerFactor =
         gestureMode === 'LOTUS' || gestureMode === 'HUNTIAN' ? 3 :
-        isGather ? 4 :
-        isPhoenix ? 5 :
+        isGather || isPhoenix ? 5 :
+        gestureMode === 'DRAGON' ? 2 :
         1;
       steer.clampLength(0, config.steerForce * delta * steerFactor);
 
