@@ -302,10 +302,21 @@ export function SwordSwarm() {
       }
 
       // 动态速度
-      let speed = gestureMode === 'GATHER' ? config.sprintSpeed : config.maxSpeed;
-      if (target.distanceTo(pos) > 4) speed = config.sprintSpeed;
-      else if (target.distanceTo(pos) < 1)
-        speed = target.distanceTo(pos) * config.maxSpeed;
+      // 凤凰阵：双圆环紧凑，所有剑都要从远处聚过来，单独给更高基础速度 + 冲刺 + 转向力
+      const isPhoenix = gestureMode === 'PHOENIX';
+      let speed: number;
+      if (gestureMode === 'GATHER') {
+        speed = config.sprintSpeed;
+      } else if (isPhoenix) {
+        speed = config.maxSpeed * 1.8;
+      } else {
+        speed = config.maxSpeed;
+      }
+      if (target.distanceTo(pos) > 4) {
+        speed = isPhoenix ? config.sprintSpeed * 1.5 : config.sprintSpeed;
+      } else if (target.distanceTo(pos) < 1) {
+        speed = target.distanceTo(pos) * config.maxSpeed * (isPhoenix ? 2 : 1);
+      }
 
       // 计算转向力
       const desired = target.sub(pos);
@@ -322,7 +333,11 @@ export function SwordSwarm() {
 
       const steer = desired.sub(vel);
       // 双龙阵也使用高转向力，让飞剑更快跟随圆周轨迹
-      const steerFactor = gestureMode === 'GATHER' || gestureMode === 'LOTUS' || gestureMode === 'HUNTIAN' ? 3 : 1;
+      // 凤凰阵单独给更高的转向力（×5），让剑群更激进地对准目标
+      const steerFactor =
+        gestureMode === 'GATHER' || gestureMode === 'LOTUS' || gestureMode === 'HUNTIAN' ? 3 :
+        isPhoenix ? 5 :
+        1;
       steer.clampLength(0, config.steerForce * delta * steerFactor);
 
       vel.add(steer);
