@@ -1,8 +1,8 @@
 {
-  "name": "wanjian",
+  "name": "zhijian-wanjian",
   "private": true,
   "version": "1.0.0",
-  "description": "青竹蜂云剑阵 - 基于 MediaPipe 手势识别的 3D 飞剑阵型控制应用",
+  "description": "指尖万剑 - 基于 MediaPipe 手势识别的 3D 飞剑阵型控制应用",
   "author": "",
   "license": "MIT",
   "type": "module",

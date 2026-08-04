@@ -84,7 +84,7 @@ function UI() {
           transition: 'color 0.3s',
         }}
       >
-        青竹蜂云剑
+        指尖万剑
       </h1>
       <p style={{ fontSize: '14px', opacity: 0.7 }}>{getHint()}</p>
     </div>
@@ -129,7 +129,7 @@ function LoadingScreen({ step, message }: { step: string; message: string }) {
           }}
         />
         <h2 style={{ color: '#00ff88', fontSize: '24px', marginBottom: '15px' }}>
-          🗡️ 青竹蜂云剑阵
+          🗡️ 指尖万剑
         </h2>
         <p style={{ color: '#00ff88', fontSize: '12px', marginBottom: '8px' }}>{step}</p>
         <p style={{ color: '#aaa', fontSize: '14px' }}>{message}</p>

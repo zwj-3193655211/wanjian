@@ -41,10 +41,19 @@ declare global {
   }
 }
 
-// 手势防抖
+// 手势防抖：滑动窗口投票 + 连胜加速
 let lastGesture: GestureMode = 'LOTUS';
-let gestureCount = 0;
-const GESTURE_THRESHOLD = 3; // 连续3帧相同才确认
+const gestureHistory: GestureMode[] = [];
+const GESTURE_WINDOW = 3;       // 窗口缩小到 3 帧（~100ms @ 30fps）
+let lastWinner: GestureMode | null = null;   // 上一次投票 winner
+let winnerStreakCount = 0;      // winner 连续相同的次数（用于加速）
+
+// 伸直分数阈值
+const FINGER_EXT_THRESHOLD = 0.55; // 略严格一点，避免轻微抬起被判为伸直
+
+// 日志节流：每 N 帧打印一次完整分数详情
+let frameCounter = 0;
+const LOG_EVERY_N_FRAMES = 5;
 
 // 初始化函数
 export async function initHandTracking(videoElement: HTMLVideoElement): Promise<boolean> {
@@ -189,27 +198,69 @@ export function getLatestResults(): Results | null {
   return latestResults;
 }
 
-// 检测手势类型 - 优化版
+// 检测手势类型 - 滑动窗口投票 + 连胜加速
 export function detectGesture(): GestureMode {
   if (!latestResults || !latestResults.multiHandLandmarks || latestResults.multiHandLandmarks.length === 0) {
-    return 'LOTUS'; // 默认5指 -> 莲花阵
+    return lastGesture; // 没检测到手时保持上一帧
   }
-  
+
   const landmarks = latestResults.multiHandLandmarks[0];
   const detected = analyzeGesture(landmarks);
-  
-  // 防抖：连续相同手势才确认
-  if (detected === lastGesture) {
-    gestureCount++;
-  } else {
-    lastGesture = detected;
-    gestureCount = 1;
+
+  // 把当前帧塞进窗口
+  gestureHistory.push(detected);
+  if (gestureHistory.length > GESTURE_WINDOW) {
+    gestureHistory.shift();
   }
-  
-  return gestureCount >= GESTURE_THRESHOLD ? detected : lastGesture;
+
+  if (gestureHistory.length === 0) {
+    return lastGesture;
+  }
+
+  // 投票：哪个手势出现最多就选哪个
+  const counts = new Map<GestureMode, number>();
+  for (const g of gestureHistory) {
+    counts.set(g, (counts.get(g) || 0) + 1);
+  }
+
+  let winner: GestureMode = lastGesture;
+  let maxVotes = 0;
+  for (const [g, v] of counts) {
+    if (v > maxVotes) {
+      maxVotes = v;
+      winner = g;
+    }
+  }
+
+  // 连胜追踪
+  if (winner === lastWinner) {
+    winnerStreakCount++;
+  } else {
+    lastWinner = winner;
+    winnerStreakCount = 1;
+  }
+
+  // 连胜加速：稳定同一 winner 越久，所需票数越少
+  //   streak 1~3：需要 2 票（窗口 3 帧中 67%）
+  //   streak 4~10：需要 2 票
+  //   streak 11+：只要 winner 是 1 票都接受（极快响应）
+  const requiredVotes = winnerStreakCount >= 11 ? 1 : 2;
+
+  if (maxVotes >= requiredVotes) {
+    lastGesture = winner;
+  }
+  return lastGesture;
 }
 
-// 分析手势 - 基于精确的手指检测
+// 3D 距离（用 Z 提升对掌面倾斜的鲁棒性）
+const distance3D = (a: Landmark, b: Landmark): number => {
+  const dx = a.x - b.x;
+  const dy = a.y - b.y;
+  const dz = a.z - b.z;
+  return Math.sqrt(dx * dx + dy * dy + dz * dz);
+};
+
+// 分析手势 - 评分制（handSize 归一化 + 3D 距离）
 function analyzeGesture(landmarks: Landmark[]): GestureMode {
   // MediaPipe Hands Landmark 索引:
   // 0: 手腕
@@ -219,61 +270,71 @@ function analyzeGesture(landmarks: Landmark[]): GestureMode {
   // 无名指: 13(MCP), 14(PIP), 15(DIP), 16(TIP)
   // 小指: 17(MCP), 18(PIP), 19(DIP), 20(TIP)
 
-  // 手指伸直判定 - 基于Y坐标比较（指尖Y < PIP关节Y = 伸直）
-  const isFingerExtended = (tipIdx: number, pipIdx: number, mcpIdx: number) => {
-    const tip = landmarks[tipIdx];
-    const pip = landmarks[pipIdx];
-    const mcp = landmarks[mcpIdx];
+  const wrist = landmarks[0];
 
-    // 指尖在PIP关节上方
-    const isAbovePip = tip.y < pip.y;
-    // 指尖在MCP关节上方
-    const isAboveMcp = tip.y < mcp.y;
-    // Y差异足够大
-    const yDiff = pip.y - tip.y;
-    const isSignificant = yDiff > 0.02;
+  // 1) 手部大小归一化基线：手腕 -> 中指 MCP 的距离
+  const handSize = distance3D(wrist, landmarks[9]);
+  if (handSize < 1e-6) {
+    return 'LOTUS'; // 检测失败兜底
+  }
 
-    return isAbovePip && isSignificant;
+  // 2) 四指伸直分数：指尖到手腕 / MCP 到手腕（与手部远近无关，天然归一化）
+  // 弯曲时 tip 接近 mcp，ratio ≈ 1.0
+  // 伸直时 tip 远离 wrist，ratio ≈ 1.6~1.8
+  const fingerScore = (tipIdx: number, mcpIdx: number): number => {
+    const tipDist = distance3D(landmarks[tipIdx], wrist);
+    const mcpDist = distance3D(landmarks[mcpIdx], wrist);
+    if (mcpDist < 1e-6) return 0;
+    const ratio = tipDist / mcpDist;
+    // 归一化到 0~1：(ratio - 1.0) / 0.7
+    return Math.max(0, Math.min(1, (ratio - 1.0) / 0.7));
   };
 
-  // 拇指特殊判定 - 基于X坐标差异
-  const isThumbExtended = () => {
-    const tip = landmarks[4];
-    const ip = landmarks[3];
-
-    // 拇指伸直时，指尖远离IP关节
-    const xDist = Math.abs(tip.x - ip.x);
-    const yDist = Math.abs(tip.y - ip.y);
-
-    return xDist > yDist && xDist > 0.05;
+  // 3) 拇指伸直分数：拇指尖到食指 MCP 的距离（跨掌面方向）
+  // 弯曲 / 自然翘起：ratio ≈ 0.3~0.55 handSize（手一放松就这个范围）
+  // 完全伸直（OK 手势 / 5 指全开）：ratio ≈ 0.85~1.05 handSize
+  // 要求拇指"明显"伸直才算，避免 1 指食指时被误判
+  const thumbScore = (): number => {
+    const tipDist = distance3D(landmarks[4], landmarks[5]);
+    const ratio = tipDist / handSize;
+    return Math.max(0, Math.min(1, (ratio - 0.55) / 0.3));
   };
 
-  // 检测每个手指状态
-  const thumbExtended = isThumbExtended();
-  const indexExtended = isFingerExtended(8, 6, 5);
-  const middleExtended = isFingerExtended(12, 10, 9);
-  const ringExtended = isFingerExtended(16, 14, 13);
-  const pinkyExtended = isFingerExtended(20, 18, 17);
+  const scores = {
+    thumb: thumbScore(),
+    index: fingerScore(8, 5),
+    middle: fingerScore(12, 9),
+    ring: fingerScore(16, 13),
+    pinky: fingerScore(20, 17),
+  };
 
+  const isExt = (s: number) => s > FINGER_EXT_THRESHOLD;
   const extendedCount = [
-    thumbExtended, indexExtended, middleExtended, ringExtended, pinkyExtended
+    isExt(scores.thumb),
+    isExt(scores.index),
+    isExt(scores.middle),
+    isExt(scores.ring),
+    isExt(scores.pinky),
   ].filter(Boolean).length;
 
-  console.log('=== 手指状态 ===', {
-    thumb: thumbExtended ? '伸' : '弯',
-    index: indexExtended ? '伸' : '弯',
-    middle: middleExtended ? '伸' : '弯',
-    ring: ringExtended ? '伸' : '弯',
-    pinky: pinkyExtended ? '伸' : '弯',
-    extendedCount
-  });
-
-  // 映射手指数量到阵型
-  // 0指 -> 聚拢阵, 1指 -> 游龙阵, 2指 -> 双龙阵, 3指 -> 螺旋阵, 4指 -> 莲花阵, 5指 -> 大庚剑阵
+  // 0~5 映射到 6 个阵型
   const gestureMap: GestureMode[] = ['GATHER', 'DRAGON', 'HUNTIAN', 'PHOENIX', 'LOTUS', 'DAGENG'];
   const detected = gestureMap[extendedCount] || 'LOTUS';
 
-  console.log(`>>> ${extendedCount}指 (${detected})`);
+  // 节流日志：每 N 帧打一次完整分数，阵型切换时立即打
+  frameCounter++;
+  const shouldLogDetails = frameCounter % LOG_EVERY_N_FRAMES === 0;
+  const justChanged = detected !== lastGesture;
+  if (shouldLogDetails || justChanged) {
+    console.log(`[hand] ${extendedCount}指 -> ${detected} | scores:`, {
+      thumb: scores.thumb.toFixed(2),
+      index: scores.index.toFixed(2),
+      middle: scores.middle.toFixed(2),
+      ring: scores.ring.toFixed(2),
+      pinky: scores.pinky.toFixed(2),
+      handSize: handSize.toFixed(3),
+    });
+  }
   return detected;
 }
 

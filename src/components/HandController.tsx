@@ -10,9 +10,10 @@ import {
 } from '../services/HandTrackingService';
 import type { GestureMode } from '../store';
 
-// 防抖状态
+// 防抖状态：连胜加速版
 let pendingGesture: GestureMode | null = null;
-let gestureStartTime = 0;
+let pendingStartTime = 0;
+let pendingStreakCount = 0;        // 连续多少帧 detectGesture 都给出同一个 pendingGesture
 let currentConfirmedGesture: GestureMode = 'LOTUS';
 
 export function HandController() {
@@ -45,14 +46,24 @@ export function HandController() {
     // 检测手势
     const detectedGesture = detectGesture();
 
-    // 防抖逻辑
+    // 防抖逻辑：连胜加速
+    //  - streak 0~5 帧（0~170ms）：需要稳定 50ms 才接受（防单次闪烁）
+    //  - streak 6~15 帧（200~500ms）：需要稳定 20ms（响应快）
+    //  - streak 16+ 帧（530ms+）：立即接受（用户明确意图）
+    // 单次闪烁会重置 streak，所以不会误切
     const now = clock.getElapsedTime();
     if (detectedGesture !== pendingGesture) {
       pendingGesture = detectedGesture;
-      gestureStartTime = now;
+      pendingStartTime = now;
+      pendingStreakCount = 1;
     } else {
-      const duration = now - gestureStartTime;
-      if (duration > 0.15 && detectedGesture !== currentConfirmedGesture) {
+      pendingStreakCount++;
+      const duration = now - pendingStartTime;
+      const requiredDuration =
+        pendingStreakCount < 6 ? 0.05 :
+        pendingStreakCount < 16 ? 0.02 :
+        0;
+      if (duration >= requiredDuration && detectedGesture !== currentConfirmedGesture) {
         currentConfirmedGesture = detectedGesture;
         setGestureMode(detectedGesture);
       }
