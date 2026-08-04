@@ -48,8 +48,18 @@ const GESTURE_WINDOW = 3;       // 窗口缩小到 3 帧（~100ms @ 30fps）
 let lastWinner: GestureMode | null = null;   // 上一次投票 winner
 let winnerStreakCount = 0;      // winner 连续相同的次数（用于加速）
 
-// 伸直分数阈值
-const FINGER_EXT_THRESHOLD = 0.55; // 略严格一点，避免轻微抬起被判为伸直
+// 伸直分数阈值（按手指分档）
+// 食指是用户最常用的"1 指"信号，半伸状态很常见，给更宽松阈值
+// 拇指最容易"自然翘起"误判，给最严格阈值（要求明显伸直）
+// 其他三指用标准阈值
+const FINGER_EXT_THRESHOLDS: Record<string, number> = {
+  thumb: 0.70,   // 拇指：阈值 0.70，要求明显伸直
+  index: 0.45,   // 食指：阈值 0.45，半伸也算伸（修 1 指不准）
+  middle: 0.55,  // 中指
+  ring: 0.55,    // 无名指
+  pinky: 0.55,   // 小指
+};
+const FINGER_EXT_THRESHOLD = 0.55; // 默认阈值（兼容旧调用）
 
 // 日志节流：每 N 帧打印一次完整分数详情
 let frameCounter = 0;
@@ -308,13 +318,15 @@ function analyzeGesture(landmarks: Landmark[]): GestureMode {
     pinky: fingerScore(20, 17),
   };
 
-  const isExt = (s: number) => s > FINGER_EXT_THRESHOLD;
+  // 按手指分档阈值：拇指最严（防自然翘起误判），食指最宽（防半伸漏判）
+  const isExt = (s: number, finger: keyof typeof FINGER_EXT_THRESHOLDS) =>
+    s > FINGER_EXT_THRESHOLDS[finger];
   const extendedCount = [
-    isExt(scores.thumb),
-    isExt(scores.index),
-    isExt(scores.middle),
-    isExt(scores.ring),
-    isExt(scores.pinky),
+    isExt(scores.thumb, 'thumb'),
+    isExt(scores.index, 'index'),
+    isExt(scores.middle, 'middle'),
+    isExt(scores.ring, 'ring'),
+    isExt(scores.pinky, 'pinky'),
   ].filter(Boolean).length;
 
   // 0~5 映射到 6 个阵型
