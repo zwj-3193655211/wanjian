@@ -53,11 +53,11 @@ export type GestureMode = 'GATHER' | 'DRAGON' | 'HUNTIAN' | 'PHOENIX' | 'DAGENG'
 
 // 阵型元数据
 export const FORMATION_META: Record<GestureMode, { name: string; emoji: string; color: string }> = {
-  GATHER: { name: '聚拢阵', emoji: '🛡️', color: '#88ccff' },
+  GATHER: { name: '混元阵', emoji: '🛡️', color: '#88ccff' },
   DRAGON: { name: '游龙阵', emoji: '🐉', color: '#00ff88' },
   HUNTIAN: { name: '浑天阵', emoji: '🌌', color: '#44ffaa' },
   PHOENIX: { name: '凤凰阵', emoji: '🔥', color: '#ff4444' },
-  DAGENG: { name: '大庚剑阵', emoji: '⚔️', color: '#ffd700' },
+  DAGENG: { name: '万剑落', emoji: '⚔️', color: '#ffd700' },
   LOTUS: { name: '莲花阵', emoji: '🌸', color: '#ffaa44' },
 };
 
