@@ -200,16 +200,33 @@ for (let i = 0; i < 500; i++) {
 
 **InstancedMesh**：500 把剑用 1 个 draw call 渲染，性能关键。
 
+### 成型速度档位
+
+不同阵型的"目标区域紧凑度"差异大，**剑群聚拢所需速度不能一刀切**。本项目采用按阵型分档：
+
+| 阵型 | 基础速度 | 远距离冲刺 | 转向力 steerFactor | 设计理由 |
+|---|---|---|---|---|
+| 凤凰 PHOENIX | maxSpeed × 1.8 | sprintSpeed × 1.5 | × 5 | 双圆环紧凑（半径 7），剑需最激进聚拢 |
+| 混元 GATHER | sprintSpeed | sprintSpeed × 1.2 | × 5 | 球形轨道（半径 18），需快速归位 |
+| 莲花 LOTUS | maxSpeed | sprintSpeed | × 3 | 螺旋分布广，剑自然有方向感 |
+| 浑天 HUNTIAN | maxSpeed | sprintSpeed | × 3 | 圆周运动，剑要快速上轨 |
+| 游龙 DRAGON | maxSpeed | sprintSpeed × 1.2 | × 2 | 沿路径拖尾，需追上移动的焦点 |
+| 万剑落 DAGENG | maxSpeed | sprintSpeed | × 1 | 分层旋转慢动作，剑已分散 |
+
+**核心思想**：紧凑阵型（凤凰/混元）给最高档，分布广的阵型（莲花/浑天）给中间档，跟随型（游龙）温和加档，慢动作（万剑落）保持原速。
+
 ### 阵型算法
 
-| 阵型 | 算法 | 关键公式 |
-|---|---|---|
-| GATHER | 球形轨道 + 自转 | Fibonacci 球 + sin/cos |
-| DRAGON | 路径拖尾 | 沿 pathHistory 插值 + simplex 噪声扰动 |
-| HUNTIAN | 圆周运动 | `cos/sin(angle)` |
-| PHOENIX | 双圆环 ∞ | 奇偶剑分两组 |
-| LOTUS | 斐波那契螺旋 | 黄金角 + 呼吸缩放 |
-| DAGENG | 主剑 + 分层 | 主剑放大 6 倍，10 层反向旋转 |
+| 手指数 | 阵型名 | enum | 算法 | 关键公式 |
+|---|---|---|---|---|
+| 0指 | 混元阵 🛡️ | `GATHER` | 球形轨道 + 自转 | Fibonacci 球 + sin/cos |
+| 1指 | 游龙阵 🐉 | `DRAGON` | 路径拖尾 | 沿 pathHistory 插值 + simplex 噪声扰动 |
+| 2指 | 浑天阵 🌌 | `HUNTIAN` | 圆周运动 | `cos/sin(angle)` |
+| 3指 | 凤凰阵 🔥 | `PHOENIX` | 双圆环 ∞ | 奇偶剑分两组 |
+| 4指 | 莲花阵 🌸 | `LOTUS` | 斐波那契螺旋 | 黄金角 + 呼吸缩放 |
+| 5指 | 万剑落 ⚔️ | `DAGENG` | 主剑 + 分层 | 主剑放大 6 倍，10 层反向旋转 |
+
+> 阵型 enum 名（`GATHER` / `DAGENG`）保留为内部代号，UI 显示使用中文名。
 
 ## 7. 性能数据
 
@@ -255,3 +272,22 @@ for (let i = 0; i < 500; i++) {
 | 飞剑物理 + 阵型 | `src/components/SwordSwarm.tsx` |
 | 主场景装配 | `src/components/Scene.tsx` |
 | 媒体模型本地化 | `public/models/*.tflite` |
+
+## 11. 演化里程碑
+
+按 commit 顺序的关键改动：
+
+| Commit | 类型 | 内容 |
+|---|---|---|
+| `1d56d9f` | refactor | 项目重命名（青竹蜂云剑阵 → 指尖万剑）+ V2 手势识别算法（评分制 + handSize + 双层连胜） |
+| `cf0ee0b` | docs | 新增 TECH.md 技术路线文档 |
+| `baa22cb` | perf | 凤凰阵单独加速（最高档：×1.8 / ×1.5 / ×5） |
+| `d24258f` | perf | 混元阵温和加速（冲刺 ×1.2 / 转向 ×4） |
+| `771353c` | perf | 混元阵转向力 ×4 → ×5（追平凤凰），游龙阵温和加速 |
+| `5cc7149` | rename | 0指「聚拢阵」→「混元阵」，5指「大庚剑阵」→「万剑落」 |
+
+**关键决策**：
+- 阵型名修改只动 `FORMATION_META.name` 和 README，enum 名和 CONFIG 变量保留为内部代号
+- 凤凰阵单独给最高档加速，因为双圆环紧凑（半径 7）成型最难
+- 不上 ML 兜底（性价比不高，详见第 8 节）
+
