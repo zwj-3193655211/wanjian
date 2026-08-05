@@ -117,4 +117,4 @@ MIT
 
 ## 作者
 
-Created with Claude Code
+Jevon
